@@ -693,8 +693,18 @@ void PpuSetMode7PerspectiveCorrection(Ppu *ppu, int low, int high) {
 }
 
 void PpuSetExtraSideSpace(Ppu *ppu, int left, int right, int bottom) {
-  ppu->extraLeftCur = UintMin(left, ppu->extraLeftRight);
-  ppu->extraRightCur = UintMin(right, ppu->extraLeftRight);
+  left = UintMin(left, ppu->extraLeftRight);
+  right = UintMin(right, ppu->extraLeftRight);
+  // Tilemap is 512px wide, viewport is 256px, so max 256px of extra space total.
+  // Beyond this the tilemap wraps and shows tiles from the wrong side.
+  enum { kMaxTotalExtra = 256 };
+  if (left + right > kMaxTotalExtra) {
+    int total = left + right;
+    left = left * kMaxTotalExtra / total;
+    right = kMaxTotalExtra - left;
+  }
+  ppu->extraLeftCur = left;
+  ppu->extraRightCur = right;
   ppu->extraBottomCur = UintMin(bottom, 16);
 }
 
