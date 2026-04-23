@@ -197,12 +197,18 @@ void ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
 
   // Enable extended tilemap before the clamp check so PpuSetExtraSideSpace
   // bypasses the tilemap_extra cap when we're on the overworld.
-  // Only during stable gameplay (submodule 0 = player control), not transitions.
+  // Allow during: module 9 submodule 0 (player control), or module 14 with
+  // saved module 9 (dialog/sign overlay — overworld data still valid).
+  // Block during: overworld transitions (mod 9, submodule != 0) where map
+  // data and scroll values are in flux.
   {
     int mod = main_module_index;
-    if (mod == 14) mod = saved_module_for_menu;
-    g_zenv.ppu->extTilemapEnabled = (mod == 9 && submodule_index == 0 &&
-                                     g_zenv.ppu->extraLeftRight != 0);
+    bool is_ow_stable;
+    if (mod == 14)
+      is_ow_stable = (saved_module_for_menu == 9);
+    else
+      is_ow_stable = (mod == 9 && submodule_index == 0);
+    g_zenv.ppu->extTilemapEnabled = (is_ow_stable && g_zenv.ppu->extraLeftRight != 0);
   }
 
   if (g_zenv.ppu->extraLeftRight != 0 || render_flags & kPpuRenderFlags_Height240)
